@@ -1,0 +1,11 @@
+corpus
+packages
+scripts/__pycache__/
+.env
+env
+project.lock
+assets/input_documents
+assets/output_documents
+training*
+*.png
+*.jpg

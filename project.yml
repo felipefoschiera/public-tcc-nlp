@@ -1,0 +1,115 @@
+title: "Detecting PHI entities in medical records from i2b2"
+description: "Undergraduate final project with NLP for anonymizing medical records"
+
+vars:
+  training_set_folder: training-PHI-Gold-Set1
+  test_set_folder: testing-PHI-Gold-fixed
+  config_spacy_vectors: "config_spacy_vectors.cfg"
+  config_spacy_trf: "config_spacy_trf.cfg"
+  name: "ner_tc_i2b2"
+  version: "0.0.0"
+  train: "train"
+  dev: "dev"
+  test: "test"
+
+directories: ["assets", "training", "configs", "scripts", "corpus", "packages"]
+
+assets:
+    - dest: "assets/i2b2/${vars.training_set_folder}"
+      description: "Folder path for annotated training set folder" 
+    - dest: "assets/i2b2/${vars.test_set_folder}"
+      description: "Folder path for annotated test set folder"
+    - dest: "assets/input_documents"
+      description: "Folder path for documents to be anonymized"
+    
+workflows:
+  spacy-vectors:
+    - preprocess
+    - train-spacy-vectors
+    - evaluate-spacy-vectors
+  spacy-trf:
+    - preprocess
+    - train-spacy-trf
+    - evaluate-spacy-trf
+    
+commands:
+  - name: "preprocess"
+    help: "Convert the data to spaCy's binary format"
+    script:
+      - "python scripts/preprocess.py assets/i2b2/${vars.training_set_folder} corpus assets/i2b2/${vars.test_set_folder}"
+    deps:
+      - "assets/i2b2/${vars.training_set_folder}"
+      - "assets/i2b2/${vars.test_set_folder}"
+      - "scripts/preprocess.py"
+    outputs:
+      - "corpus/${vars.train}.spacy"
+      - "corpus/${vars.dev}.spacy"
+      - "corpus/${vars.test}.spacy"
+
+  - name: "train-spacy-vectors"
+    help: "Train a spaCy NER model with vectors (en_core_web_md)"
+    script:
+      - "python -m spacy train configs/${vars.config_spacy_vectors} --output training/training_spacy_vectors/ --paths.train corpus/${vars.train}.spacy --paths.dev corpus/${vars.dev}.spacy --paths.vectors en_core_web_md"
+    deps:
+      - "corpus/${vars.train}.spacy"
+      - "corpus/${vars.dev}.spacy"
+    outputs:
+      - "training/training_spacy_vectors/model-best"
+  
+  - name: "evaluate-spacy-vectors"
+    help: "Evaluate the spaCy model with vectors (en_core_web_md) on test"
+    script:
+      - "python -m spacy evaluate training/training_spacy_vectors/model-best corpus/${vars.test}.spacy --output training/training_spacy_vectors/metrics.json"
+    deps:
+      - "corpus/${vars.test}.spacy"
+      - "training/training_spacy_vectors/model-best"
+    outputs:
+      - "training/training_spacy_vectors/metrics.json"
+
+  - name: "train-spacy-trf"
+    help: "Train a spaCy NER model with a custom transformer"
+    script:
+      - "python -m spacy train configs/${vars.config_spacy_trf} --output training/training_spacy_trf/ --paths.train corpus/${vars.train}.spacy --paths.dev corpus/${vars.dev}.spacy --gpu-id 0"
+    deps:
+      - "corpus/${vars.train}.spacy"
+      - "corpus/${vars.dev}.spacy"
+    outputs:
+      - training/training_spacy_trf/model-best"
+
+  - name: "evaluate-spacy-trf"
+    help: "Evaluate the spaCy model with a custom transformer and export metrics"
+    script:
+      - "python -m spacy evaluate training/training_spacy_trf/model-best corpus/${vars.test}.spacy --output training/training_spacy_trf/metrics.json --gpu-id 0"
+    deps:
+      - "corpus/${vars.test}.spacy"
+      - "training/training_spacy_trf/model-best"
+    outputs:
+      - "training/training_spacy_trf/metrics.json"
+
+  - name: package-spacy-vectors
+    help: "Package the trained model so it can be installed"
+    script:
+      - "python -m spacy package training/training_spacy_vectors/model-best packages --name ${vars.name} --version ${vars.version} --force"
+    deps:
+      - "training/training_spacy_vectors/model-best"
+    outputs_no_cache:
+      - "packages/en_${vars.name}-${vars.version}/dist/en_${vars.name}-${vars.version}.tar.gz"
+
+  - name: package-spacy-trf
+    help: "Package the trained model so it can be installed"
+    script:
+      - "python -m spacy package training/training_spacy_trf/model-best packages --name ${vars.name} --version ${vars.version} --force"
+    deps:
+      - "training/training_spacy_trf/model-best"
+    outputs_no_cache:
+      - "packages/en_${vars.name}-${vars.version}/dist/en_${vars.name}-${vars.version}.tar.gz"
+      
+  - name: anonymize
+    help: Runs the anonymization script the trained model
+    script:
+      - "python scripts/anonymize.py packages/en_${vars.name}-${vars.version}/en_${vars.name}/en_${vars.name}-${vars.version} assets/input_documents assets/output_documents"
+    deps:
+      - "packages/en_${vars.name}-${vars.version}/en_${vars.name}/en_${vars.name}-${vars.version}"
+      - "assets/input_documents"
+    outputs:
+      - "assets/output_documents"
