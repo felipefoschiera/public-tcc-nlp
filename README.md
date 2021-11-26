@@ -9,7 +9,6 @@
 | :pencil: **[Using custom transformers]**                | Customize the transformer model                          |
 | :play_or_pause_button: **[Commands]**                   | Commands to execute the workflow steps                   |
 | :next_track_button: **[Workflows]**                     | Complete workflows from preprocessing to anonymization   |
-| :card_index_dividers: **[Assets]**                      | Project files for training and evaluation                |
 | :dvd: **[Installation - Windows]**                      | Steps to install all tools on Windows environment        |
 | :zap: **[Redacting TXT and PDF documents]**             | Perform anonymization on documents                       |     
 | :crystal_ball: **[Model results]**                      | View model metrics from evaluations                      |
@@ -63,17 +62,6 @@ inputs have changed.
 | ------------------|-----------------------------------------------------------------------------------|
 | `spacy-vectors`   | `preprocess` &rarr; `train-spacy-vectors`     &rarr; `evaluate-spacy-vectors`     |
 | `spacy-trf`       | `preprocess` &rarr; `train-spacy-trf`         &rarr; `evaluate-spacy-trf`         |
-
-### :card_index_dividers: Assets
-
-The following assets are defined by the project. They can
-be fetched by running [`spacy project assets`](https://spacy.io/api/cli#project-assets)
-in the project directory.
-
-| File                                  | Source    | Description                               |
-|---------------------------------------|-----------|-------------------------------------------|
-| `assets/i2b2/testing-PHI-Gold-fixed`  | Local     | Folder containing XML testing files       |
-| `assets/i2b2/training-PHI-Gold-Set1`  | Local     | Folder containing XML training files      |
 
 ### :dvd: Installation - Windows
 
